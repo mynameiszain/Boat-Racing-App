@@ -1,7 +1,8 @@
 import React, { useState } from 'react';
 import { View, Text, TextInput, TouchableOpacity, StyleSheet, Image } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
-
+import AsyncStorage from '@react-native-async-storage/async-storage';
+import axios from 'axios';  // Import axios
 
 const LoginScreen = () => {
   const [email, setEmail] = useState('');
@@ -14,30 +15,40 @@ const LoginScreen = () => {
 
   const handleLogin = async () => {
     try {
-      const response = await fetch(`https://amanda.capraworks.com/api/login.php?login=1&email=${email}&password=${password}`);
-      const data = await response.json();
+      const response = await axios.get(`https://amanda.capraworks.com/api/login.php`, {
+        params: {
+          login: 1,
+          email: email,
+          password: password,
+        },
+      });
       
-      console.log('API Response:', data); 
+      console.log('API Response:', response.data);
       
-      if (!response.ok) {
-        throw new Error('Network response was not ok');
-      }
-  
-      if (data.message === "Login successful") {
+      if (response.data.message === "Login successful") {
         console.log('Login successful');
         
-        navigation.navigate('Signup');
+        const user = response.data.user; 
+  
+        await AsyncStorage.setItem('user', JSON.stringify(user));
+        await AsyncStorage.setItem('userEmail', email);
+  
+        navigation.navigate('Home');
       } else {
         throw new Error('Login failed. Invalid email or password.');
       }
     } catch (error) {
-      console.error('Error occurred while logging in:', error.message);
-
+      if (error.response) {
+        console.error('API Error:', error.response.data);
+      } else if (error.request) {
+        console.error('Request Error:', error.request);
+      } else {
+        console.error('Error', error.message);
+      }
     }
   };
   
   
-
   return (
     <View style={styles.container}>
       <Image
@@ -60,17 +71,18 @@ const LoginScreen = () => {
       <TouchableOpacity style={styles.button} onPress={handleLogin}>
         <Text style={styles.buttonText}>Login</Text>
       </TouchableOpacity>
-        <Text style={styles.ORText}>OR</Text>
+      <Text style={styles.ORText}>OR</Text>
       <TouchableOpacity style={styles.buttonwithoutbackground} onPress={handleGetStarted}>
         <Text style={styles.buttonwithoutbackgroundText}>Create New Account</Text>
       </TouchableOpacity>
     </View>
   );
 };
+
 const styles = StyleSheet.create({
-  logo:{
+  logo: {
     width: 120,
-    height:120,
+    height: 120,
     marginBottom: 25,
   },
   container: {
@@ -103,14 +115,14 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     borderRadius: 10,
   },
-  buttonwithoutbackground:{
+  buttonwithoutbackground: {
     width: '80%',
     height: 50,    
     justifyContent: 'center',
     alignItems: 'center',
     borderRadius: 10,
   },
-  ORText:{
+  ORText: {
     color: '#93989E',
     fontSize: 18,
     marginTop: 10,
@@ -119,7 +131,7 @@ const styles = StyleSheet.create({
     color: '#fff',
     fontSize: 18,
     fontWeight: 'bold',
-  },  
+  },
   buttonwithoutbackgroundText: {
     color: '#1D1852',
     fontSize: 18,
