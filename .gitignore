@@ -1,1 +1,4 @@
 node_modules
+# Ignore Android build files
+android/.gradle/
+android/app/build/
